@@ -9,10 +9,14 @@ clock = pygame.time.Clock()
 
 dt = 0
 running = True
-player_size = 20
+player_size = 50
 
 # 중앙에서 시작하는 플레이어
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+
+# 이미지 불러오기
+player_image = pygame.image.load("assets/dave_front.png").convert_alpha()
+player_image = pygame.transform.scale(player_image, (player_size, player_size))
 
 while running:
     # 종료 조건
@@ -24,7 +28,7 @@ while running:
     screen.fill("#c9c9c9")
 
     # 플레이어 그리기
-    pygame.draw.circle(screen, "black", player_pos, player_size)
+    screen.blit(player_image, player_pos)
 
     # 움직임 제어
     keys = pygame.key.get_pressed()
