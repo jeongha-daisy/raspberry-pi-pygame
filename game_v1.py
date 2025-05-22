@@ -104,6 +104,21 @@ while running:
     # 다시 그리기
     pygame.display.flip()
 
+    # ========
+    # 닿았는지 검사
+    # 플레이어 콜라이더 값
+    left_value = player_pos.x - player_size / 2
+    right_value = player_pos.x + player_size / 2
+    top_value = player_pos.x - player_size / 2
+    bottom_value = player_pos.x + player_size / 2
+
+    for arrow in arrow_list:
+        # 화살의 좌표가 플레이어 콜라이더 안에 들어왔으면
+        if arrow[0].x > left_value and arrow[0].x < right_value and arrow[0].y > top_value and arrow[0].y < bottom_value:
+            print("게임 종료")
+
+    # ========
+
     # 프레임 속도
     dt = clock.tick(60) / 1000
 
