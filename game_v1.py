@@ -2,6 +2,9 @@
 import pygame
 import random
 
+import smbus
+import time
+
 pygame.init()
 
 size = width, height = 640, 480
@@ -11,11 +14,21 @@ clock = pygame.time.Clock()
 dt = 0
 running = True
 player_size = 50
+player_speed = 200
 arrow_size = 20
 arrow_max_speed = 300
 arrow_min_speed = 100
 limited_arrows = 8 #화살 개수 제한
 arrow_list = []
+
+
+
+
+address = 0x48
+A0 = 0x40
+A1 = 0x41
+bus = smbus.SMBus(1)
+
 
 # 중앙에서 시작하는 플레이어
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
@@ -74,6 +87,7 @@ while running:
             speed = random.randrange(arrow_min_speed, arrow_max_speed)
             arrow_list.append([pygame.Vector2(0, arrowY), speed, direction])
 
+    
     # 화살 그리기 및 이동
     for arrow in arrow_list:
         screen.blit(arrow_image, arrow[0])
@@ -90,6 +104,8 @@ while running:
     # 플레이어 그리기
     screen.blit(player_image, player_pos)
 
+    # keyboard moving
+    """
     # 움직임 제어
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w] and player_pos.y > 0:
@@ -101,6 +117,33 @@ while running:
     if keys[pygame.K_d] and player_pos.x < width:
         player_pos.x += 300 * dt
 
+    """
+    # joystcik moving
+    bus.write_byte(address, A0)
+    time.sleep(0.01)
+    value1 = bus.read_byte(address)
+    
+    bus.write_byte(address, A1)
+    time.sleep(0.01)
+    value2 = bus.read_byte(address)
+    
+    print(value1, value2)
+    # down
+    if value1 < 100 and player_pos.x > (0 - player_size / 2):
+        print("left")
+        player_pos.x -= player_speed * dt
+    if value1 > 220 and player_pos.x < (width - player_size / 2):
+        print("right")
+        player_pos.x += player_speed * dt
+    if value2 < 100 and player_pos.y > (0 - player_size / 2):
+        print("up")
+        player_pos.y -= player_speed * dt
+    if value2 > 220 and player_pos.y < (height - player_size / 2):
+        print("down")
+        player_pos.y += player_speed * dt
+
+    
+    
     # 다시 그리기
     pygame.display.flip()
 
