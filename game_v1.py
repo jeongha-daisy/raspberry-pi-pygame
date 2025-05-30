@@ -46,6 +46,13 @@ textFont = pygame.font.SysFont(None, 50)
 # 게임 상태
 game_state = 0
 
+# 게임 점수
+score = 0
+# 시작 시간
+start_ticks = 0
+# 경과 시간
+elapesed_time=0
+
 while running:
     # 종료 조건
     for event in pygame.event.get():
@@ -62,25 +69,27 @@ while running:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_k]:
            game_state = 1
+           start_ticks = pygame.time.get_ticks()
 
     elif game_state == 1:
+        # 경과 시간 계산
+        elapesed_time = (pygame.time.get_ticks() - start_ticks) / 1000
+        # 점수 계산
+        score = int(elapesed_time)
+
         # ========
         # 화살 그리기
-        for arrow in arrow_list:
-            # 바닥에 닿았으면 리스트에서 제거하기
-            if arrow[2] == 0 and arrow[0].y > height:
-                arrow_list.remove(arrow)
-            if arrow[2] == 1 and arrow[0].x < 0:
-                arrow_list.remove(arrow)
-            if arrow[2] == 2 and arrow[0].y < 0:
-                arrow_list.remove(arrow)
-            if arrow[2] == 3 and arrow[0].x > width:
-                arrow_list.remove(arrow)
+        arrow_list = [arrow for arrow in arrow_list if not (
+                (arrow[2] == 0 and arrow[0].y > height) or
+                (arrow[2] == 1 and arrow[0].x < 0) or
+                (arrow[2] == 2 and arrow[0].y < 0) or
+                (arrow[2] == 3 and arrow[0].x > width)
+        )]
 
         # 10개 이하라면 또 추가
-        if len(arrow_list) < limited_arrows:
+        while len(arrow_list) < limited_arrows:
             # 랜덤한 위치 속도, 시작 위치(북, 동, 남, 서)를 arrow 리스트에 넣는다.
-            direction = random.randint(0, 4)
+            direction = random.randint(0, 3)
             # 북쪽에서 날아오는 화살
             if direction == 0:
                 arrowX = random.randrange(0, width)
@@ -120,13 +129,13 @@ while running:
 
         # keyboard moving
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w] and player_pos.y > 0:
+        if keys[pygame.K_w] and player_pos.y > (0 - player_size / 2):
             player_pos.y -= 300 * dt
-        if keys[pygame.K_s] and player_pos.y < height:
+        if keys[pygame.K_s] and player_pos.y < (height - player_size / 2):
             player_pos.y += 300 * dt
-        if keys[pygame.K_a] and player_pos.x > 0:
+        if keys[pygame.K_a] and player_pos.x > (0 - player_size / 2):
             player_pos.x -= 300 * dt
-        if keys[pygame.K_d] and player_pos.x < width:
+        if keys[pygame.K_d] and player_pos.x < (width - player_size / 2):
             player_pos.x += 300 * dt
 
         """
@@ -161,20 +170,24 @@ while running:
         # 플레이어 콜라이더 값
         left_value = player_pos.x - player_size / 2
         right_value = player_pos.x + player_size / 2
-        top_value = player_pos.x - player_size / 2
-        bottom_value = player_pos.x + player_size / 2
+        top_value = player_pos.y - player_size / 2
+        bottom_value = player_pos.y + player_size / 2
 
         for arrow in arrow_list:
             # 화살의 좌표가 플레이어 콜라이더 안에 들어왔으면
-            if arrow[0].x > left_value and arrow[0].x < right_value and arrow[0].y > top_value and arrow[
-                0].y < bottom_value:
+            if left_value < arrow[0].x < right_value and top_value < arrow[0].y < bottom_value:
                 game_state = 2
 
         # ========
+        scoreText = textFont.render(str(score), True, (255, 255, 255))
+        text_rect = scoreText.get_rect(center=(width / 2, height / 2))
+        screen.blit(scoreText, text_rect)
+
     elif game_state == 2:
-        stopText = textFont.render("GAME OVER", True, (255, 255, 255))
+        stopText = textFont.render(f"GAME OVER SCORE: {score} press K to restart", True, (255, 255, 255))
         text_rect = stopText.get_rect(center=(width / 2, height / 2))
         screen.blit(stopText, text_rect)
+        keys = pygame.key.get_pressed()
     else:
         pass
 
