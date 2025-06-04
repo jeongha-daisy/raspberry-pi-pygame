@@ -46,13 +46,13 @@ class ItemManager:
             if item[3] == 1:
                 pygame.draw.circle(screen, (255, 127, 127), item[0], self.size / 2)
             elif item[3] == 2:
-                pygame.draw.circle(screen, (127, 255, 127), item[0], self.size / 2)
+                pygame.draw.circle(screen, (255, 185, 127), item[0], self.size / 2)
             elif item[3] == 3:
                 pygame.draw.circle(screen, (255, 255, 127), item[0], self.size / 2)
             elif item[3] == 4:
-                pygame.draw.circle(screen, (255, 127, 255), item[0], self.size / 2)
+                pygame.draw.circle(screen, (127, 255, 127), item[0], self.size / 2)
             elif item[3] == 5:
-                pygame.draw.circle(screen, (127, 255, 255), item[0], self.size / 2)
+                pygame.draw.circle(screen, (255, 127, 255), item[0], self.size / 2)
             elif item[3] == 6:
                 pygame.draw.circle(screen, (127, 127, 127), item[0], self.size / 2)
 
@@ -88,7 +88,7 @@ class ItemManager:
                 if item[3] == item_num:
                     print(f"아이템 {item_num} 사용")
                     self.collected_items.remove(item)
-                    return  # 하나만 사용하고 종료
+                    return item_num # 하나만 사용하고 종료
 
     def draw_collection(self, screen):
         x = 20
@@ -103,13 +103,13 @@ class ItemManager:
             if item[3] == 1:
                 color = (255, 127, 127)
             elif item[3] == 2:
-                color = (127, 255, 127)
+                color = (255, 185, 127)
             elif item[3] == 3:
                 color = (255, 255, 127)
             elif item[3] == 4:
-                color = (255, 127, 255)
+                color = (127, 255, 127)
             elif item[3] == 5:
-                color = (127, 255, 255)
+                color = (255, 127, 255)
             elif item[3] == 6:
                 color = (127, 127, 127)
 

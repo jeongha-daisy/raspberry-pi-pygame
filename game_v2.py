@@ -24,7 +24,16 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            items.use_item(event.key)
+            used_item = items.use_item(event.key)
+            if used_item in range(3):
+                print("장애물 파괴")
+                arrows.clear_all()
+            elif used_item in range(3, 5):
+                print("장애물 멈춤")
+                arrows.freeze(2)
+            elif used_item in range(5, 7):
+                print("쉴드 생성")
+                player.activate_shield(2.0)
 
     keys = pygame.key.get_pressed()
 
@@ -58,7 +67,8 @@ while running:
         # 맵 그리기
         pygame.draw.circle(screen, (0, 0, 0), (int(CENTER[0]), int(CENTER[1])), int(RADIUS), 2)
 
-        if arrows.check_collision(player.get_collider()):
+        # 충돌 검사 시 쉴드 반영
+        if arrows.check_collision(player.get_collider(), shield_active=(player.shield_timer > 0)):
             print("닿음")
             # game_state = 2
         if items.check_collision(player.get_collider()):

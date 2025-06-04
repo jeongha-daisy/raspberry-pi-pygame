@@ -10,6 +10,8 @@ class Player:
         self.speed = PLAYER_SPEED
         self.image = pygame.image.load(image_path).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.shield_timer = 0
+        self.shield_radius = self.size * 1.2  # 시각적 쉴드 반지름
         self.address = 0x48
         self.A0 = 0x40
         self.A1 = 0x41
@@ -17,6 +19,8 @@ class Player:
 
     # 움직임 메서드
     def move(self, keys, dt):
+        if self.shield_timer > 0:
+            self.shield_timer -= dt
         delta = pygame.Vector2(0, 0)
         if keys[pygame.K_w]: delta.y -= self.speed * dt
         if keys[pygame.K_s]: delta.y += self.speed * dt
@@ -60,6 +64,10 @@ class Player:
         draw_pos = self.pos - pygame.Vector2(self.size / 2, self.size / 2)
 
         pygame.draw.circle(screen, (127, 127, 127), draw_pos, self.size / 2)
+
+        if self.shield_timer > 0:
+            draw_pos = self.pos - pygame.Vector2(self.size / 2, self.size / 2)
+            pygame.draw.circle(screen, (127, 127, 255), draw_pos, self.shield_radius, 3)
         # screen.blit(self.image, draw_pos)
 
     # 콜라이더 각 좌표 반환 (네모 상자)
@@ -68,3 +76,6 @@ class Player:
             self.pos.x - self.size / 2, self.pos.x + self.size / 2,
             self.pos.y - self.size / 2, self.pos.y + self.size / 2
         )
+
+    def activate_shield(self, duration):
+        self.shield_timer = duration  # 예: 2.0초
