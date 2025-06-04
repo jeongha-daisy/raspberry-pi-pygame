@@ -2,6 +2,7 @@ import pygame
 from settings import *
 from player import Player
 from arrows import ArrowManager
+from items import ItemManager
 
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -10,6 +11,7 @@ textFont = pygame.font.SysFont(None, 50)
 
 player = Player("assets/dave_front.png")
 arrows = ArrowManager("assets/pearl.png")
+items = ItemManager()
 
 running = True
 game_state = 1
@@ -21,6 +23,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            items.use_item(event.key)
 
     keys = pygame.key.get_pressed()
 
@@ -40,6 +44,13 @@ while running:
         arrows.update(clock.get_time() / 1000)
         arrows.draw(screen)
 
+        # 아이템 그리기
+        items.update(clock.get_time() / 1000)
+        items.draw(screen)
+
+        # 가지고 있는 아이템 그리기
+        items.draw_collection(screen)
+
         # 플레이어 그리기
         player.move(keys, clock.get_time() / 1000)
         player.draw(screen)
@@ -50,6 +61,8 @@ while running:
         if arrows.check_collision(player.get_collider()):
             print("닿음")
             # game_state = 2
+        if items.check_collision(player.get_collider()):
+            print("아이템 먹음")
 
         # 점수 그리기
         startText = textFont.render(str(score), True, (0, 0, 0))
