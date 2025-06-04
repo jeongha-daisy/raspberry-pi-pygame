@@ -25,7 +25,9 @@ class Player:
     # 화면에 그리기
     def draw(self, screen):
         draw_pos = self.pos - pygame.Vector2(self.size / 2, self.size / 2)
-        screen.blit(self.image, draw_pos)
+
+        pygame.draw.circle(screen, (127, 127, 127), draw_pos, self.size / 2)
+        # screen.blit(self.image, draw_pos)
 
     # 콜라이더 각 좌표 반환 (네모 상자)
     def get_collider(self):

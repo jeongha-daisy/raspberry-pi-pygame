@@ -17,7 +17,7 @@ score = 0
 start_time = pygame.time.get_ticks()
 
 while running:
-    screen.fill("#ffe8f2")
+    screen.fill("#ffffff")
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -45,14 +45,14 @@ while running:
         player.draw(screen)
 
         # 맵 그리기
-        pygame.draw.circle(screen, (200, 200, 200), (int(CENTER[0]), int(CENTER[1])), int(RADIUS), 2)
+        pygame.draw.circle(screen, (0, 0, 0), (int(CENTER[0]), int(CENTER[1])), int(RADIUS), 2)
 
         if arrows.check_collision(player.get_collider()):
             print("닿음")
             # game_state = 2
 
         # 점수 그리기
-        startText = textFont.render(str(score), True, (255, 255, 255))
+        startText = textFont.render(str(score), True, (0, 0, 0))
         text_rect = startText.get_rect(center=(CENTER[0], CENTER[1]))
         screen.blit(startText, text_rect)
 

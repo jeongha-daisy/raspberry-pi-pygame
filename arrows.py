@@ -1,14 +1,15 @@
 import pygame
 import random
 import math
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, ARROW_MIN_SPEED, ARROW_MAX_SPEED, LIMITED_ARROWS, CENTER, RADIUS
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, ARROW_MIN_SPEED, ARROW_MAX_SPEED, LIMITED_ARROWS, CENTER, RADIUS, ARROW_SIZE
 
 class ArrowManager:
     # 이니셜라이즈
     def __init__(self, image_path):
         self.arrows = []
+        self.size = ARROW_SIZE
         self.image = pygame.image.load(image_path).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (20, 20))
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
     def update(self, dt):
         # 원 안에 있는 화살만 다시 만든다.
@@ -40,7 +41,8 @@ class ArrowManager:
     # 화면에 그리는 메서드
     def draw(self, screen):
         for arrow in self.arrows:
-            screen.blit(self.image, arrow[0])
+            # screen.blit(self.image, arrow[0])
+            pygame.draw.circle(screen, (127, 127, 255), arrow[0], self.size / 2)
 
     # 부딪혔는지 확인하는 메서드
     def check_collision(self, collider):
