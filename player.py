@@ -1,4 +1,5 @@
 import pygame
+# import smbus
 from settings import PLAYER_SIZE, PLAYER_SPEED, CENTER, RADIUS
 
 class Player:
@@ -9,6 +10,10 @@ class Player:
         self.speed = PLAYER_SPEED
         self.image = pygame.image.load(image_path).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.address = 0x48
+        self.A0 = 0x40
+        self.A1 = 0x41
+        # self.bus = smbus.SMBus(1)
 
     # 움직임 메서드
     def move(self, keys, dt):
@@ -21,6 +26,34 @@ class Player:
         new_pos = self.pos + delta
         if new_pos.distance_to(CENTER) <= RADIUS:
             self.pos = new_pos
+        """
+        bus.write_byte(address, A0)
+        time.sleep(0.01)
+        value1 = bus.read_byte(address)
+
+        bus.write_byte(address, A1)
+        time.sleep(0.01)
+        value2 = bus.read_byte(address)
+        
+        delta = pygame.Vector2(0, 0)
+
+        if value1 < 100 and player_pos.x > (0 - player_size / 2):
+            print("left")
+            delta.x -= self.speed * dt
+        if value1 > 220 and player_pos.x < (width - player_size / 2):
+            print("right")
+            delta.x += self.speed * dt
+        if value2 < 100 and player_pos.y > (0 - player_size / 2):
+            print("up")
+            delta.y -= self.speed * dt
+        if value2 > 220 and player_pos.y < (height - player_size / 2):
+            print("down")
+            delta.y += self.speed * dt
+        
+        new_pos = self.pos + delta
+        if new_pos.distance_to(CENTER) <= RADIUS:
+            self.pos = new_pos
+        """
 
     # 화면에 그리기
     def draw(self, screen):
