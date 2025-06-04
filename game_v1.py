@@ -7,7 +7,7 @@ import time
 
 pygame.init()
 
-size = width, height = 640, 480
+size = width, height = 640, 640
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
 
@@ -44,7 +44,7 @@ player_image = pygame.transform.scale(player_image, (player_size, player_size))
 textFont = pygame.font.SysFont(None, 50)
 
 # 게임 상태
-game_state = 0
+game_state = 1
 
 # 게임 점수
 score = 0
@@ -59,7 +59,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
     # 배경 색
-    screen.fill("#c9c9c9")
+    screen.fill("#ffe8f2")
 
     if game_state == 0:
         startText = textFont.render("PRESS K TO START", True, (255, 255, 255))
@@ -125,18 +125,38 @@ while running:
         # ========
 
         # 플레이어 그리기
-        screen.blit(player_image, player_pos)
+        # screen.blit(player_image, player_pos)
 
         # keyboard moving
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w] and player_pos.y > (0 - player_size / 2):
-            player_pos.y -= 300 * dt
-        if keys[pygame.K_s] and player_pos.y < (height - player_size / 2):
-            player_pos.y += 300 * dt
-        if keys[pygame.K_a] and player_pos.x > (0 - player_size / 2):
-            player_pos.x -= 300 * dt
-        if keys[pygame.K_d] and player_pos.x < (width - player_size / 2):
-            player_pos.x += 300 * dt
+        # 중심 좌표와 반지름
+        center = pygame.Vector2(width / 2, height / 2)
+        radius = width / 2 - 20
+
+        # 이동 처리
+        move_delta = pygame.Vector2(0, 0)
+        if keys[pygame.K_w]:
+            move_delta.y -= 300 * dt
+        if keys[pygame.K_s]:
+            move_delta.y += 300 * dt
+        if keys[pygame.K_a]:
+            move_delta.x -= 300 * dt
+        if keys[pygame.K_d]:
+            move_delta.x += 300 * dt
+
+        new_pos = player_pos + move_delta
+
+        # 중심 기준 거리 체크
+        if new_pos.distance_to(center) <= radius:
+            player_pos = new_pos
+
+        # 디버그 원
+        pygame.draw.circle(screen, (200, 200, 200), (int(center.x), int(center.y)), int(radius), 2)
+
+        # 화면에 플레이어 이미지 그릴 때 중심 기준으로 보정
+        draw_pos = player_pos - pygame.Vector2(player_size / 2, player_size / 2)
+        screen.blit(player_image, draw_pos)
+        print(player_pos.distance_to(center))
 
         """
         # joystcik moving
@@ -176,7 +196,8 @@ while running:
         for arrow in arrow_list:
             # 화살의 좌표가 플레이어 콜라이더 안에 들어왔으면
             if left_value < arrow[0].x < right_value and top_value < arrow[0].y < bottom_value:
-                game_state = 2
+                print("닿음")
+                #game_state = 2
 
         # ========
         scoreText = textFont.render(str(score), True, (255, 255, 255))
