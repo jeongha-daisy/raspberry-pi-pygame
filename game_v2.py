@@ -1,79 +1,94 @@
-# Example file showing a circle moving on screen
 import pygame
-import random
+from settings import *
+from player import Player
+from arrows import ArrowManager
+from items import ItemManager
 
 pygame.init()
-
-size = width, height = 640, 480
-screen = pygame.display.set_mode(size)
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
+textFont = pygame.font.SysFont(None, 50)
 
-dt = 0
-ground_height = 40
-player_size = 50
-arrow_size = 20
-arrow_list = []
+player = Player("assets/dave_front.png")
+arrows = ArrowManager("assets/pearl.png")
+items = ItemManager()
+
 running = True
-
-# 중앙에서 시작하는 플레이어
-player_pos = pygame.Vector2(width / 2, height - (ground_height + player_size))
-
-# 이미지 불러오기
-arrow_image = pygame.image.load("assets/pearl.png").convert_alpha()
-arrow_image = pygame.transform.scale(arrow_image, (arrow_size, arrow_size))
-
-player_image = pygame.image.load("assets/dave_front.png").convert_alpha()
-player_image = pygame.transform.scale(player_image, (player_size, player_size))
+game_state = 1
+score = 0
+start_time = pygame.time.get_ticks()
 
 while running:
-    # 종료 조건
+    screen.fill("#ffffff")
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            used_item = items.use_item(event.key)
+            if used_item in range(3):
+                print("장애물 파괴")
+                arrows.clear_all()
+            elif used_item in range(3, 5):
+                print("장애물 멈춤")
+                arrows.freeze(2)
+            elif used_item in range(5, 7):
+                print("쉴드 생성")
+                player.activate_shield(2.0)
 
-    # 배경 색
-    screen.fill("#c9c9c9")
-
-    # 플레이어 그리기
-    screen.blit(player_image, player_pos)
-
-
-    # ========
-    # 화살 그리기
-    for arrow in arrow_list:
-        # 바닥에 닿았으면 리스트에서 제거하기
-        if arrow[0].y > height - ground_height:
-            arrow_list.remove(arrow)
-
-    # 10개 이하라면 또 추가
-    if len(arrow_list) < 10:
-        # 랜덤한 위치와 속도를 arrow 리스트에 넣는다.
-        arrowX = random.randrange(0, width)
-        speed = random.randrange(100, 300)
-        arrow_list.append([pygame.Vector2(arrowX, 0), speed])
-
-
-    # 화살 그리기 및 이동
-    for arrow in arrow_list:
-        screen.blit(arrow_image, arrow[0])
-        arrow[0].y += arrow[1] * dt
-    # ========
-
-
-    # 땅 그리기
-    pygame.draw.rect(screen, (255, 255, 255), (0, height - ground_height, width, ground_height))
-
-    # 움직임 제어
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_a] and player_pos.x > 0:
-        player_pos.x -= 300 * dt
-    if keys[pygame.K_d] and player_pos.x < width:
-        player_pos.x += 300 * dt
+
+    if game_state == 0:
+        startText = textFont.render("PRESS K TO START", True, (255, 255, 255))
+        text_rect = startText.get_rect(center=(CENTER[0],CENTER[1]))
+        screen.blit(startText, text_rect)
+
+        if keys[pygame.K_k]:
+            game_state = 1
+            start_ticks = pygame.time.get_ticks()
+
+    elif game_state == 1:
+        score = int((pygame.time.get_ticks() - start_time) / 1000)
+
+        # 화살 그리기
+        arrows.update(clock.get_time() / 1000)
+        arrows.draw(screen)
+
+        # 아이템 그리기
+        items.update(clock.get_time() / 1000)
+        items.draw(screen)
+
+        # 가지고 있는 아이템 그리기
+        items.draw_collection(screen)
+
+        # 플레이어 그리기
+        player.move(keys, clock.get_time() / 1000)
+        player.draw(screen)
+
+        # 맵 그리기
+        pygame.draw.circle(screen, (0, 0, 0), (int(CENTER[0]), int(CENTER[1])), int(RADIUS), 2)
+
+        # 충돌 검사 시 쉴드 반영
+        if arrows.check_collision(player.get_collider(), shield_active=(player.shield_timer > 0)):
+            print("닿음")
+            # game_state = 2
+        if items.check_collision(player.get_collider()):
+            print("아이템 먹음")
+
+        # 점수 그리기
+        startText = textFont.render(str(score), True, (0, 0, 0))
+        text_rect = startText.get_rect(center=(CENTER[0], CENTER[1]))
+        screen.blit(startText, text_rect)
+
+    elif game_state == 2:
+        endText = textFont.render(f"GAME OVER SCORE: {score} press K to restart", True, (255, 255, 255))
+        text_rect = endText.get_rect(center=(CENTER[0], CENTER[1]))
+        screen.blit(endText, text_rect)
+
+    else:
+        pass
 
     # 다시 그리기
     pygame.display.flip()
-
-    # 프레임 속도
-    dt = clock.tick(60) / 1000
+    clock.tick(60)
 
 pygame.quit()
