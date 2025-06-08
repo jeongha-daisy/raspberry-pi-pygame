@@ -27,13 +27,13 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             used_item = items.use_item(event.key)
-            if used_item == 0:
+            if used_item == "button":
                 print("장애물 파괴")
                 arrows.clear_all()
-            elif used_item == 1:
+            elif used_item == "sound":
                 print("장애물 멈춤")
                 arrows.freeze(2)
-            elif used_item == 2 or used_item == 3:
+            elif used_item == "shock" or used_item == "light":
                 print("쉴드 생성")
                 player.activate_shield(2.0)
 
