@@ -9,9 +9,11 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 textFont = pygame.font.SysFont(None, 50)
 
-player = Player("assets/dave_front.png")
+player = Player("assets/Swim.png", "assets/Swim2.png")
 arrows = ArrowManager("assets/pearl.png")
 items = ItemManager()
+bg_image = pygame.image.load("assets/background.png")
+bg_image = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 running = True
 game_state = 1
@@ -19,19 +21,19 @@ score = 0
 start_time = pygame.time.get_ticks()
 
 while running:
-    screen.fill("#ffffff")
+    screen.blit(bg_image, (0, 0))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
             used_item = items.use_item(event.key)
-            if used_item in range(3):
+            if used_item == 0:
                 print("장애물 파괴")
                 arrows.clear_all()
-            elif used_item in range(3, 5):
+            elif used_item == 1:
                 print("장애물 멈춤")
                 arrows.freeze(2)
-            elif used_item in range(5, 7):
+            elif used_item == 2 or used_item == 3:
                 print("쉴드 생성")
                 player.activate_shield(2.0)
 

@@ -8,9 +8,12 @@ class ItemManager:
     def __init__(self):
         self.items = []
         self.collected_items = []
-        self.size = ARROW_SIZE
-        # self.image = pygame.image.load(image_path).convert_alpha()
-        # self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.size = ITEM_SIZE
+        self.images = []
+        for i in range(1, 5):
+            image = pygame.image.load(f"assets/item{i}.PNG").convert_alpha()
+            image = pygame.transform.scale(image, (self.size, self.size))
+            self.images.append(image)
 
     def update(self, dt):
         # 원 안에 있는 화살만 다시 만든다.
@@ -31,7 +34,7 @@ class ItemManager:
             # 최대 속도와 최저 속도 내에서 랜덤한 속도
             speed = random.randint(ARROW_MIN_SPEED, ARROW_MAX_SPEED)
 
-            index = random.randrange(1, 7)
+            index = random.randrange(1, 5)
 
             self.items.append([pos, direction, speed, index, False])
 
@@ -42,19 +45,18 @@ class ItemManager:
     # 화면에 그리는 메서드
     def draw(self, screen):
         for item in self.items:
-            # screen.blit(self.image, arrow[0])
             if item[3] == 1:
-                pygame.draw.circle(screen, (255, 127, 127), item[0], self.size / 2)
+                # pygame.draw.circle(screen, (255, 127, 127), item[0], self.size / 2)
+                screen.blit(self.images[0], item[0])
             elif item[3] == 2:
-                pygame.draw.circle(screen, (255, 185, 127), item[0], self.size / 2)
+                screen.blit(self.images[1], item[0])
+                # pygame.draw.circle(screen, (255, 185, 127), item[0], self.size / 2)
             elif item[3] == 3:
-                pygame.draw.circle(screen, (255, 255, 127), item[0], self.size / 2)
+                screen.blit(self.images[2], item[0])
+                # pygame.draw.circle(screen, (255, 255, 127), item[0], self.size / 2)
             elif item[3] == 4:
-                pygame.draw.circle(screen, (127, 255, 127), item[0], self.size / 2)
-            elif item[3] == 5:
-                pygame.draw.circle(screen, (255, 127, 255), item[0], self.size / 2)
-            elif item[3] == 6:
-                pygame.draw.circle(screen, (127, 127, 127), item[0], self.size / 2)
+                screen.blit(self.images[3], item[0])
+                # pygame.draw.circle(screen, (127, 255, 127), item[0], self.size / 2)
 
     # 부딪혔는지 확인하는 메서드
     def check_collision(self, collider):
@@ -78,8 +80,6 @@ class ItemManager:
             pygame.K_2: 2,
             pygame.K_3: 3,
             pygame.K_4: 4,
-            pygame.K_5: 5,
-            pygame.K_6: 6,
         }
 
         if key in key_to_index:
@@ -102,15 +102,15 @@ class ItemManager:
             color = (255, 255, 255)
             if item[3] == 1:
                 color = (255, 127, 127)
+                screen.blit(self.images[0], pos)
             elif item[3] == 2:
                 color = (255, 185, 127)
+                screen.blit(self.images[1], pos)
             elif item[3] == 3:
                 color = (255, 255, 127)
+                screen.blit(self.images[2], pos)
             elif item[3] == 4:
                 color = (127, 255, 127)
-            elif item[3] == 5:
-                color = (255, 127, 255)
-            elif item[3] == 6:
-                color = (127, 127, 127)
+                screen.blit(self.images[3], pos)
 
-            pygame.draw.circle(screen, color, pos, self.size / 2)
+            # pygame.draw.circle(screen, color, pos, self.size / 2)
