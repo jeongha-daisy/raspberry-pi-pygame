@@ -26,7 +26,7 @@ class ItemManager:
             pos = pygame.Vector2(x, y)
 
             direction = (pygame.Vector2(CENTER) - pos).normalize()
-            speed = random.randint(ARROW_MIN_SPEED, ARROW_MAX_SPEED)
+            speed = random.randint(MONSTER_MIN_SPEED, MONSTER_MAX_SPEED)
             item_type = random.choice(self.item_types)
 
             item = {

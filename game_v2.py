@@ -1,7 +1,7 @@
 import pygame
 from settings import *
 from player import Player
-from arrows import ArrowManager
+from monsters import MonsterManger
 from items import ItemManager
 
 pygame.init()
@@ -10,7 +10,7 @@ clock = pygame.time.Clock()
 textFont = pygame.font.SysFont(None, 50)
 
 player = Player("assets/Swim.png", "assets/Swim2.png")
-arrows = ArrowManager("assets/pearl.png")
+monsters = MonsterManger()
 items = ItemManager()
 bg_image = pygame.image.load("assets/background.png")
 bg_image = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -29,10 +29,10 @@ while running:
             used_item = items.use_item(event.key)
             if used_item == "button":
                 print("장애물 파괴")
-                arrows.clear_all()
+                monsters.clear_all()
             elif used_item == "sound":
                 print("장애물 멈춤")
-                arrows.freeze(2)
+                monsters.freeze(2)
             elif used_item == "shock" or used_item == "light":
                 print("쉴드 생성")
                 player.activate_shield(2.0)
@@ -52,8 +52,8 @@ while running:
         score = int((pygame.time.get_ticks() - start_time) / 1000)
 
         # 화살 그리기
-        arrows.update(clock.get_time() / 1000)
-        arrows.draw(screen)
+        monsters.update(clock.get_time() / 1000)
+        monsters.draw(screen)
 
         # 아이템 그리기
         items.update(clock.get_time() / 1000)
@@ -70,7 +70,7 @@ while running:
         pygame.draw.circle(screen, (0, 0, 0), (int(CENTER[0]), int(CENTER[1])), int(RADIUS), 2)
 
         # 충돌 검사 시 쉴드 반영
-        if arrows.check_collision(player.get_collider(), shield_active=(player.shield_timer > 0)):
+        if monsters.check_collision(player.get_collider(), shield_active=(player.shield_timer > 0)):
             print("닿음")
             # game_state = 2
         if items.check_collision(player.get_collider()):
