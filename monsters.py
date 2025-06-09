@@ -24,6 +24,7 @@ class MonsterManger:
 
         self.respawn_delay = 0
         self.freeze_timer = 0
+        self.slow_timer = 0
         self.frame_delay = 0.5
 
     def update(self, dt):
@@ -32,8 +33,11 @@ class MonsterManger:
             return
 
         is_frozen = self.freeze_timer > 0
+        is_slown = self.slow_timer > 0
         if is_frozen:
             self.freeze_timer -= dt
+        if is_slown:
+            self.slow_timer -=dt
 
         self.monsters = [monster for monster in self.monsters if not self._is_out(monster)]
 
@@ -59,7 +63,13 @@ class MonsterManger:
 
         if not is_frozen:
             for monsters in self.monsters:
-                monsters["pos"] += monsters["dir"] * monsters["speed"] * dt
+                if is_slown:
+                    speed_value = 0.3
+                    monsters["pos"] += monsters["dir"] * monsters["speed"] * dt * speed_value
+                else:
+                    speed_value = 1.0
+                    monsters["pos"] += monsters["dir"] * monsters["speed"] * dt * speed_value
+
 
     def draw(self, screen):
         for monster in self.monsters:
@@ -93,3 +103,5 @@ class MonsterManger:
 
     def freeze(self, seconds):
         self.freeze_timer = seconds
+    def slow_down(self, seconds):
+        self.slow_timer = seconds

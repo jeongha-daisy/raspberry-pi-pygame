@@ -28,14 +28,14 @@ while running:
         elif event.type == pygame.KEYDOWN:
             used_item = items.use_item(event.key)
             if used_item == "button":
-                print("장애물 파괴")
-                monsters.clear_all()
-            elif used_item == "sound":
-                print("장애물 멈춤")
                 monsters.freeze(2)
-            elif used_item == "shock" or used_item == "light":
-                print("쉴드 생성")
+            elif used_item == "sound":
+                monsters.slow_down(2.0)
+            elif used_item == "light":
                 player.activate_shield(3.0)
+            elif used_item == "shock" :
+                monsters.clear_all()
+
 
     keys = pygame.key.get_pressed()
 
