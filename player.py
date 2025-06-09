@@ -4,14 +4,44 @@ from settings import PLAYER_SIZE, PLAYER_SPEED, CENTER, RADIUS
 
 class Player:
     # 이니셜라이즈
-    def __init__(self, image_path):
+    def __init__(self, image_path, image_path2):
         self.pos = pygame.Vector2(CENTER[0], CENTER[1])
         self.size = PLAYER_SIZE
         self.speed = PLAYER_SPEED
+
+        # self.image = pygame.transform.scale(self.image, (self.size, self.size))
+
+        # 프레임 나누기
         self.image = pygame.image.load(image_path).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.image2 = pygame.image.load(image_path2).convert_alpha()
+
+        self.direction = "right"
+        sheet_width = self.image.get_width()
+        sheet_height = self.image.get_height()
+        frame_count = 6
+        frame_width = sheet_width // frame_count
+
+        self.current_frame = 0
+        self.frame_timer = 0
+        self.frame_delay = 0.5
+
+        self.frames_horizontal = []
+        self.frames_vertical = []
+
+        for i in range(frame_count):
+            frame = self.image.subsurface(pygame.Rect(i * frame_width, 0, frame_width, sheet_height))
+            frame = pygame.transform.scale(frame, (self.size, self.size))
+            self.frames_horizontal.append(frame)
+        for i in range(frame_count):
+            frame = self.image2.subsurface(pygame.Rect(i * frame_width, 0, frame_width, sheet_height))
+            frame = pygame.transform.scale(frame, (self.size, self.size))
+            self.frames_vertical.append(frame)
+
         self.shield_timer = 0
-        self.shield_radius = self.size * 1.2  # 시각적 쉴드 반지름
+        self.shield_radius = self.size * 2  # 시각적 쉴드 반지름
+        self.shield_image = pygame.image.load("assets/shield.png").convert_alpha()
+        self.shield_image = pygame.transform.scale(self.shield_image, (self.shield_radius, self.shield_radius))
+
         self.address = 0x48
         self.A0 = 0x40
         self.A1 = 0x41
@@ -22,10 +52,18 @@ class Player:
         if self.shield_timer > 0:
             self.shield_timer -= dt
         delta = pygame.Vector2(0, 0)
-        if keys[pygame.K_w]: delta.y -= self.speed * dt
-        if keys[pygame.K_s]: delta.y += self.speed * dt
-        if keys[pygame.K_a]: delta.x -= self.speed * dt
-        if keys[pygame.K_d]: delta.x += self.speed * dt
+        if keys[pygame.K_w]:
+            delta.y -= self.speed * dt
+            self.direction = "up"
+        if keys[pygame.K_s]:
+            delta.y += self.speed * dt
+            self.direction = "down"
+        if keys[pygame.K_a]:
+            delta.x -= self.speed * dt
+            self.direction = "left"
+        if keys[pygame.K_d]:
+            delta.x += self.speed * dt
+            self.direction = "right"
 
         new_pos = self.pos + delta
         if new_pos.distance_to(CENTER) <= RADIUS:
@@ -58,17 +96,33 @@ class Player:
         if new_pos.distance_to(CENTER) <= RADIUS:
             self.pos = new_pos
         """
+        self.update_animation(dt)
+
+    def update_animation(self, dt):
+        self.frame_timer += dt
+        if self.frame_timer >= self.frame_delay:
+            self.frame_timer = 0
+            self.current_frame = (self.current_frame + 1) % len(self.frames_horizontal)
 
     # 화면에 그리기
     def draw(self, screen):
         draw_pos = self.pos - pygame.Vector2(self.size / 2, self.size / 2)
 
-        pygame.draw.circle(screen, (127, 127, 127), draw_pos, self.size / 2)
+        # pygame.draw.circle(screen, (127, 127, 127), draw_pos, self.size / 2)
 
         if self.shield_timer > 0:
-            draw_pos = self.pos - pygame.Vector2(self.size / 2, self.size / 2)
-            pygame.draw.circle(screen, (127, 127, 255), draw_pos, self.shield_radius, 3)
-        # screen.blit(self.image, draw_pos)
+            draw_shield_pos = self.pos - pygame.Vector2(self.shield_radius / 2, self.shield_radius / 2)
+            screen.blit(self.shield_image, draw_shield_pos)
+        if self.direction in ["left", "right"]:
+            image = self.frames_horizontal[self.current_frame]
+            if self.direction == "left":
+                image = pygame.transform.flip(image, True, False)
+        else:
+            image = self.frames_vertical[self.current_frame]
+            if self.direction == "down":
+                image = pygame.transform.flip(image, False, True)
+
+        screen.blit(image, draw_pos)
 
     # 콜라이더 각 좌표 반환 (네모 상자)
     def get_collider(self):
