@@ -35,7 +35,7 @@ while running:
                 monsters.freeze(2)
             elif used_item == "shock" or used_item == "light":
                 print("쉴드 생성")
-                player.activate_shield(2.0)
+                player.activate_shield(3.0)
 
     keys = pygame.key.get_pressed()
 

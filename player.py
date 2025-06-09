@@ -38,7 +38,10 @@ class Player:
             self.frames_vertical.append(frame)
 
         self.shield_timer = 0
-        self.shield_radius = self.size * 1.2  # 시각적 쉴드 반지름
+        self.shield_radius = self.size * 2  # 시각적 쉴드 반지름
+        self.shield_image = pygame.image.load("assets/shield.png").convert_alpha()
+        self.shield_image = pygame.transform.scale(self.shield_image, (self.shield_radius, self.shield_radius))
+
         self.address = 0x48
         self.A0 = 0x40
         self.A1 = 0x41
@@ -108,9 +111,8 @@ class Player:
         # pygame.draw.circle(screen, (127, 127, 127), draw_pos, self.size / 2)
 
         if self.shield_timer > 0:
-            draw_pos = self.pos - pygame.Vector2(self.size / 2, self.size / 2)
-            pygame.draw.circle(screen, (127, 127, 255), draw_pos, self.shield_radius, 3)
-        # screen.blit(self.image, draw_pos)
+            draw_shield_pos = self.pos - pygame.Vector2(self.shield_radius / 2, self.shield_radius / 2)
+            screen.blit(self.shield_image, draw_shield_pos)
         if self.direction in ["left", "right"]:
             image = self.frames_horizontal[self.current_frame]
             if self.direction == "left":
