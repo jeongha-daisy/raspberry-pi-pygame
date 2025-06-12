@@ -20,15 +20,32 @@ class ItemManager:
         self.items = [item for item in self.items if not self._is_out(item) and not item["collected"]]
 
         while len(self.items) < LIMITED_ITEMS:
-            # start side
-            # 1: left, -1: right
-            start_side = random.choice([-1, 1])
-            if start_side == 1:
-                x = 0
-                y = random.uniform(0, SCREEN_HEIGHT)
-            else:
+            # start direction
+            direction = random.randint(0, 3)
+
+            # north
+            if direction == 0:
+                dir = "north"
+                x = random.randrange(0, SCREEN_WIDTH)
+                y = 0
+
+            # east (오른쪽에서 왼쪽으로)
+            elif direction == 1:
+                dir = "east"
                 x = SCREEN_WIDTH
-                y = random.uniform(0, SCREEN_HEIGHT)
+                y = random.randrange(0, SCREEN_HEIGHT)
+
+            # west (왼쪽에서 오른쪽으로)
+            elif direction == 2:
+                dir = "west"
+                x = 0
+                y = random.randrange(0, SCREEN_HEIGHT)
+
+            # south
+            else:
+                dir = "south"
+                x = random.randrange(0, SCREEN_WIDTH)
+                y = SCREEN_HEIGHT
 
             pos = pygame.Vector2(x, y)
             speed = random.randint(MONSTER_MIN_SPEED, MONSTER_MAX_SPEED)
@@ -36,7 +53,7 @@ class ItemManager:
 
             item = {
                 "pos": pos,
-                "side": start_side,
+                "dir": dir,
                 "speed": speed,
                 "type": item_type,
                 "collected": False
@@ -45,7 +62,17 @@ class ItemManager:
             self.items.append(item)
 
         for item in self.items:
-            item["pos"].x += item["side"] * item["speed"] * dt
+            if item["dir"] == "north":
+                item["pos"].y += item["speed"] * dt
+
+            elif item["dir"] == "east":
+                item["pos"].x -= item["speed"] * dt
+
+            elif item["dir"] == "west":
+                item["pos"].x += item["speed"] * dt
+
+            else:
+                item["pos"].y -= item["speed"] * dt
 
     def draw(self, screen):
         for item in self.items:
@@ -62,7 +89,12 @@ class ItemManager:
         return False
 
     def _is_out(self, item):
-        return item["pos"].x < 0 or item["pos"].x > SCREEN_WIDTH
+        return (
+                (item["dir"] == "north" and item["pos"].y > SCREEN_HEIGHT) or
+                (item["dir"] == "south" and item["pos"].y < 0) or
+                (item["dir"] == "east" and item["pos"].x < 0) or
+                (item["dir"] == "west" and item["pos"].x > SCREEN_WIDTH)
+        )
 
     def use_item(self, key):
         key_map = {

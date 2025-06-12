@@ -42,22 +42,39 @@ class MonsterManger:
         self.monsters = [monster for monster in self.monsters if not self._is_out(monster)]
 
         while len(self.monsters) < LIMITED_MONSTERS:
-            # start side
-            # 1: left, -1: right
-            start_side = random.choice([-1, 1])
-            if start_side == 1:
-                x = 0
-                y = random.uniform(0, SCREEN_HEIGHT)
-            else:
+            # start direction
+            direction = random.randint(0, 3)
+
+            # north
+            if direction == 0:
+                dir = "north"
+                x = random.randrange(0, SCREEN_WIDTH)
+                y = 0
+
+            # east (오른쪽에서 왼쪽으로)
+            elif direction == 1:
+                dir = "east"
                 x = SCREEN_WIDTH
-                y = random.uniform(0, SCREEN_HEIGHT)
+                y = random.randrange(0, SCREEN_HEIGHT)
+
+            # west (왼쪽에서 오른쪽으로)
+            elif direction == 2:
+                dir = "west"
+                x = 0
+                y = random.randrange(0, SCREEN_HEIGHT)
+
+            # south
+            else:
+                dir = "south"
+                x = random.randrange(0, SCREEN_WIDTH)
+                y = SCREEN_HEIGHT
 
             pos = pygame.Vector2(x, y)
             speed = random.randint(MONSTER_MIN_SPEED, MONSTER_MAX_SPEED)
 
             monsters = {
                 "pos": pos,
-                "side": start_side,
+                "dir": dir,
                 "speed": speed,
                 "frames": random.choice(self.images),
                 "frame_index": 0,
@@ -68,12 +85,19 @@ class MonsterManger:
 
         if not is_frozen:
             for monsters in self.monsters:
-                if is_slown:
-                    speed_value = 0.3
-                    monsters["pos"].x += monsters["side"] * monsters["speed"] * dt * speed_value
-                else:
-                    speed_value = 1.0
-                    monsters["pos"].x += monsters["side"] * monsters["speed"] * dt * speed_value
+                speed_value = 0.3 if is_slown else 1.0
+
+                if monsters["dir"] == "north":
+                    monsters["pos"].y += monsters["speed"] * dt * speed_value
+
+                elif monsters["dir"] == "east":
+                    monsters["pos"].x -= monsters["speed"] * dt * speed_value
+
+                elif monsters["dir"] == "west":
+                    monsters["pos"].x += monsters["speed"] * dt * speed_value
+
+                else:  # south
+                    monsters["pos"].y -= monsters["speed"] * dt * speed_value
 
 
     def draw(self, screen):
@@ -85,7 +109,7 @@ class MonsterManger:
 
             image = monster["frames"][monster["frame_index"]]
 
-            if monster["side"] == -1:
+            if monster["dir"] == "east":
                 image = pygame.transform.flip(image, True, False)
 
             screen.blit(image, image.get_rect(center=monster["pos"]))
@@ -100,7 +124,12 @@ class MonsterManger:
         return False
 
     def _is_out(self, monster):
-        return monster["pos"].x < 0 or monster["pos"].x > SCREEN_WIDTH
+        return (
+                (monster["dir"] == "north" and monster["pos"].y > SCREEN_HEIGHT) or
+                (monster["dir"] == "south" and monster["pos"].y < 0) or
+                (monster["dir"] == "east" and monster["pos"].x < 0) or
+                (monster["dir"] == "west" and monster["pos"].x > SCREEN_WIDTH)
+        )
 
     def clear_all(self):
         self.monsters = []
