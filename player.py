@@ -1,6 +1,6 @@
 import pygame
 # import smbus
-from settings import PLAYER_SIZE, PLAYER_SPEED, CENTER, RADIUS
+from settings import PLAYER_SIZE, PLAYER_SPEED, CENTER, SCREEN_WIDTH, SCREEN_HEIGHT
 
 class Player:
     # 이니셜라이즈
@@ -66,8 +66,11 @@ class Player:
             self.direction = "right"
 
         new_pos = self.pos + delta
-        if new_pos.distance_to(CENTER) <= RADIUS:
-            self.pos = new_pos
+        # 화면 밖으로 못나가게 clamp
+        new_x = max(0, min(SCREEN_WIDTH, new_pos.x))
+        new_y = max(0, min(SCREEN_HEIGHT, new_pos.y))
+        self.pos = pygame.Vector2(new_x, new_y)
+
         """
         bus.write_byte(address, A0)
         time.sleep(0.01)

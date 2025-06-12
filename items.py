@@ -20,18 +20,23 @@ class ItemManager:
         self.items = [item for item in self.items if not self._is_out(item) and not item["collected"]]
 
         while len(self.items) < LIMITED_ITEMS:
-            angle = random.uniform(0, 2 * math.pi)
-            x = CENTER[0] + RADIUS * math.cos(angle)
-            y = CENTER[1] + RADIUS * math.sin(angle)
-            pos = pygame.Vector2(x, y)
+            # start side
+            # 1: left, -1: right
+            start_side = random.choice([-1, 1])
+            if start_side == 1:
+                x = 0
+                y = random.uniform(0, SCREEN_HEIGHT)
+            else:
+                x = SCREEN_WIDTH
+                y = random.uniform(0, SCREEN_HEIGHT)
 
-            direction = (pygame.Vector2(CENTER) - pos).normalize()
+            pos = pygame.Vector2(x, y)
             speed = random.randint(MONSTER_MIN_SPEED, MONSTER_MAX_SPEED)
             item_type = random.choice(self.item_types)
 
             item = {
                 "pos": pos,
-                "dir": direction,
+                "side": start_side,
                 "speed": speed,
                 "type": item_type,
                 "collected": False
@@ -40,7 +45,7 @@ class ItemManager:
             self.items.append(item)
 
         for item in self.items:
-            item["pos"] += item["dir"] * item["speed"] * dt
+            item["pos"].x += item["side"] * item["speed"] * dt
 
     def draw(self, screen):
         for item in self.items:
@@ -57,7 +62,7 @@ class ItemManager:
         return False
 
     def _is_out(self, item):
-        return item["pos"].distance_to(CENTER) > RADIUS
+        return item["pos"].x < 0 or item["pos"].x > SCREEN_WIDTH
 
     def use_item(self, key):
         key_map = {

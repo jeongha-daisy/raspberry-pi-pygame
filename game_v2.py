@@ -12,7 +12,7 @@ textFont = pygame.font.SysFont(None, 50)
 player = Player("assets/Swim.png", "assets/Swim2.png")
 monsters = MonsterManger()
 items = ItemManager()
-bg_image = pygame.image.load("assets/background.png")
+bg_image = pygame.image.load("assets/background_img.png")
 bg_image = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 running = True
@@ -66,9 +66,6 @@ while running:
         player.move(keys, clock.get_time() / 1000)
         player.draw(screen)
 
-        # 맵 그리기
-        pygame.draw.circle(screen, (0, 0, 0), (int(CENTER[0]), int(CENTER[1])), int(RADIUS), 2)
-
         # 충돌 검사 시 쉴드 반영
         if monsters.check_collision(player.get_collider(), shield_active=(player.shield_timer > 0)):
             print("닿음")
@@ -78,7 +75,12 @@ while running:
 
         # 점수 그리기
         startText = textFont.render(str(score), True, (0, 0, 0))
-        text_rect = startText.get_rect(center=(CENTER[0], CENTER[1]))
+        text_rect = startText.get_rect()
+
+        # 왼쪽 하단으로 위치 지정
+        padding = 20
+        text_rect.topleft = (SCREEN_WIDTH - text_rect.width - padding, SCREEN_HEIGHT - text_rect.height - padding)
+
         screen.blit(startText, text_rect)
 
     elif game_state == 2:

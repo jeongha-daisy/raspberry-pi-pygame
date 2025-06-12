@@ -42,17 +42,22 @@ class MonsterManger:
         self.monsters = [monster for monster in self.monsters if not self._is_out(monster)]
 
         while len(self.monsters) < LIMITED_MONSTERS:
-            angle = random.uniform(0, 2 * math.pi)
-            x = CENTER[0] + RADIUS * math.cos(angle)
-            y = CENTER[1] + RADIUS * math.sin(angle)
-            pos = pygame.Vector2(x, y)
+            # start side
+            # 1: left, -1: right
+            start_side = random.choice([-1, 1])
+            if start_side == 1:
+                x = 0
+                y = random.uniform(0, SCREEN_HEIGHT)
+            else:
+                x = SCREEN_WIDTH
+                y = random.uniform(0, SCREEN_HEIGHT)
 
-            direction = (pygame.Vector2(CENTER) - pos).normalize()
+            pos = pygame.Vector2(x, y)
             speed = random.randint(MONSTER_MIN_SPEED, MONSTER_MAX_SPEED)
 
             monsters = {
                 "pos": pos,
-                "dir": direction,
+                "side": start_side,
                 "speed": speed,
                 "frames": random.choice(self.images),
                 "frame_index": 0,
@@ -65,10 +70,10 @@ class MonsterManger:
             for monsters in self.monsters:
                 if is_slown:
                     speed_value = 0.3
-                    monsters["pos"] += monsters["dir"] * monsters["speed"] * dt * speed_value
+                    monsters["pos"].x += monsters["side"] * monsters["speed"] * dt * speed_value
                 else:
                     speed_value = 1.0
-                    monsters["pos"] += monsters["dir"] * monsters["speed"] * dt * speed_value
+                    monsters["pos"].x += monsters["side"] * monsters["speed"] * dt * speed_value
 
 
     def draw(self, screen):
@@ -80,7 +85,7 @@ class MonsterManger:
 
             image = monster["frames"][monster["frame_index"]]
 
-            if monster["dir"].x < 0:
+            if monster["side"] == -1:
                 image = pygame.transform.flip(image, True, False)
 
             screen.blit(image, image.get_rect(center=monster["pos"]))
@@ -95,7 +100,7 @@ class MonsterManger:
         return False
 
     def _is_out(self, monster):
-        return monster["pos"].distance_to(CENTER) > RADIUS
+        return monster["pos"].x < 0 or monster["pos"].x > SCREEN_WIDTH
 
     def clear_all(self):
         self.monsters = []
