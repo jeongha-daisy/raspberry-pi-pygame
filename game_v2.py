@@ -7,6 +7,9 @@ from monsters import MonsterManger
 from items import ItemManager
 
 pygame.init()
+pygame.mixer.init()
+shootSound = pygame.mixer.Sound('Itty_Bitty.mp3')
+shootSound.play()
 global player, monsters, items, score, start_ticks, level
 
 screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
@@ -188,4 +191,5 @@ while running:
     pygame.display.flip()
     clock.tick(60)
 
+pygame.mixer.quit()
 pygame.quit()
