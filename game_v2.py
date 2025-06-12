@@ -1,8 +1,20 @@
 import pygame
+import socket
+import pygame
+import threading
+
 from settings import *
 from player import Player
 from monsters import MonsterManger
 from items import ItemManager
+
+SERVER_IP = '10.125.126.208'
+PORT = 9000
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+server_socket.bind((SERVER_IP, PORT))
+server_socket.listen(1)
+print(f"Server listening on {SERVER_IP}:{PORT}")
 
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -19,6 +31,58 @@ running = True
 game_state = 1
 score = 0
 start_time = pygame.time.get_ticks()
+
+# 서버 연결 수락
+client_socket, client_address = server_socket.accept()
+print(f"Connected to {client_address}")
+
+# got message from sensor
+def handle_client_message():
+    # 딕셔너리로 수정하면 좋을 것 같음
+    # message = {
+    #   "type": "button"
+    #   "value": true
+    # }
+
+    # message = {
+    #   "type": "joystick"
+    #   "value": [110, 220]
+    # }
+
+    while running:
+        try:
+            message = client_socket.recv(1024).decode('utf-8')
+            if message:
+                print(f"Received: {message}")
+                #if message.type == "joystick":
+                    # player.move(dt=clock.get_time() / 1000, joystick=joystick_data)
+                handle_message(message)
+        except Exception as e:
+            print(f"Error receiving message: {e}")
+            break
+
+# handle a message from sensor (button, sound, light, shock)
+def handle_message(message):
+    global game_state, items, arrows, player
+
+    # message에 해당하는 item을 가지고 있어야만 item을 사용할 수 있다.
+    # use_item은 message에 해당하는 item을 가지고 있는지 확인한다.
+    used_item = items.use_item(message)
+
+    if used_item == "button":
+        print("press_detected: Freeze obstacle")
+        monsters.freeze(2)
+    elif used_item == "sound":
+        monsters.slow_down(2.0)
+    elif used_item == "light":
+        print("dark_detected: Shield")
+        player.activate_shield(3.0)
+    elif used_item == "shock":
+        print("shock_detected: Destroy obstacle (Clear All)")
+        monsters.clear_all()
+
+# 메시지 수신을 위한 스레드 실행
+threading.Thread(target=handle_client_message, daemon=True).start()
 
 while running:
     screen.blit(bg_image, (0, 0))
@@ -63,7 +127,7 @@ while running:
         items.draw_collection(screen)
 
         # 플레이어 그리기
-        player.move(keys, clock.get_time() / 1000)
+        player.move(clock.get_time() / 1000, keys=keys)
         player.draw(screen)
 
         # 맵 그리기
@@ -93,4 +157,7 @@ while running:
     pygame.display.flip()
     clock.tick(60)
 
+# 소켓 연결 종료
+client_socket.close()
+server_socket.close()
 pygame.quit()
