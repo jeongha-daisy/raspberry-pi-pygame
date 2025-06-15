@@ -96,21 +96,17 @@ class ItemManager:
                 (item["dir"] == "west" and item["pos"].x > SCREEN_WIDTH)
         )
 
-    def use_item(self, key):
-        key_map = {
-            pygame.K_1: "button",
-            pygame.K_2: "sound",
-            pygame.K_3: "shock",
-            pygame.K_4: "light",
-        }
-
-        if key in key_map:
-            target_type = key_map[key]
-            for item in self.collected_items:
-                if item["type"] == target_type:
-                    print(f"아이템 {target_type} 사용")
-                    self.collected_items.remove(item)
-                    return target_type
+    def use_item(self, message):
+        # 가지고 있는 아이템 중에
+        for item in self.collected_items:
+            # "message" 아이템이 있으면
+            if item["type"] == message:
+                # 그 아이템을 사용한다.
+                print(f"아이템 {message} 사용")
+                # 가진 아이템 중에서 뺀다.
+                self.collected_items.remove(item)
+                # 사용할 아이템 반환
+                return message
 
     def draw_collection(self, screen):
         x = 20
