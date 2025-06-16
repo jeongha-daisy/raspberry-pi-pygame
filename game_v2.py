@@ -9,7 +9,7 @@ from items import ItemManager
 
 #====================================================================== NETWORK
 
-SERVER_IP = '10.125.126.208'
+SERVER_IP = '10.125.126.21'
 PORT = 9000
 JOYSTICK_PORT = 5000
 
@@ -129,12 +129,15 @@ def handle_joystick_message():
     global running, joystick_updown, joystick_leftright
     while running:
         try:
-            message = joystick_client_socket.recv(1024).decode('utf-8')
+            message = joystick_client_socket.recv(1024).decode('utf-8').strip()
             if message:
-                value1_str, value2_str = message.strip().split(',')
-                joystick_updown = int(value1_str)
-                joystick_leftright = int(value2_str)
-                print(f"Joystick data received: {joystick_updown}, {joystick_leftright}")
+                parts = message.split(',')
+                if len(parts) == 2:
+                    value1_str, value2_str = parts
+                    joystick_updown = int(value1_str)
+                    joystick_leftright = int(value2_str)
+                else:
+                    print(f"Invalid joystick message format: {message}")
         except Exception as e:
             print(f"Error receiving joystick data: {e}")
             break
@@ -158,7 +161,7 @@ def reset_game():
 
 # 간단한 줄바꿈 출력 함수
 def render_multiline(textFile, font, color, surface, center_y, line_height):
-    with open(textFile, "r") as file:
+    with open(textFile, "r", encoding="utf-8") as file:
         lines = file.read().splitlines()
 
     total_height = len(lines) * line_height
@@ -256,8 +259,7 @@ while running:
 
         # 플레이어 그리기
         # player.move(keys, clock.get_time() / 1000)
-        player.move(clock.get_time() / 1000, keys=keys, joystick_updown=joystick_updown,
-                    joystick_leftright=joystick_leftright)
+        player.move(clock.get_time() / 1000, joystick=[joystick_updown, joystick_leftright])
         player.draw(screen)
 
         # 충돌 검사 시 쉴드 반영

@@ -48,36 +48,25 @@ class Player:
         # self.bus = smbus.SMBus(1)
 
     # 움직임 메서드
-    def move(self, dt, keys=None, joystick=None):
+    def move(self, dt, joystick=None):
         if self.shield_timer > 0:
             self.shield_timer -= dt
         delta = pygame.Vector2(0, 0)
 
-        # 키 우선 입력
-        if keys:
-            if keys[pygame.K_w]:
-                delta.y -= self.speed * dt
-                self.direction = "up"
-            if keys[pygame.K_s]:
-                delta.y += self.speed * dt
-                self.direction = "down"
-            if keys[pygame.K_a]:
-                delta.x -= self.speed * dt
-                self.direction = "left"
-            if keys[pygame.K_d]:
-                delta.x += self.speed * dt
-                self.direction = "right"
-        # 키보드가 안 눌렸을 때만 조이스틱 사용
-        elif joystick:
-            x_axis, y_axis = joystick  # 예: (x값, y값) -1.0~1.0 범위
-            delta.x += x_axis * self.speed * dt
-            delta.y += y_axis * self.speed * dt
+        value1, value2 = joystick
 
-            # 방향 저장 (간단히 절댓값 큰 축 기준)
-            if abs(x_axis) > abs(y_axis):
-                self.direction = "right" if x_axis > 0 else "left"
-            else:
-                self.direction = "down" if y_axis > 0 else "up"
+        if value1 < 100 and self.pos.x > (0 - self.size / 2):
+            self.direction = "left"
+            delta.x -= self.speed * dt
+        if value1 > 220 and self.pos.x < (SCREEN_WIDTH - self.size / 2):
+            self.direction = "right"
+            delta.x += self.speed * dt
+        if value2 < 100 and self.pos.y > (0 - self.size / 2):
+            self.direction = "up"
+            delta.y -= self.speed * dt
+        if value2 > 220 and self.pos.y < (SCREEN_HEIGHT - self.size / 2):
+            self.direction = "down"
+            delta.y += self.speed * dt
 
         new_pos = self.pos + delta
         # 화면 밖으로 못나가게 clamp
