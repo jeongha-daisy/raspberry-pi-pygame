@@ -20,18 +20,40 @@ class ItemManager:
         self.items = [item for item in self.items if not self._is_out(item) and not item["collected"]]
 
         while len(self.items) < LIMITED_ITEMS:
-            angle = random.uniform(0, 2 * math.pi)
-            x = CENTER[0] + RADIUS * math.cos(angle)
-            y = CENTER[1] + RADIUS * math.sin(angle)
-            pos = pygame.Vector2(x, y)
+            # start direction
+            direction = random.randint(0, 3)
 
-            direction = (pygame.Vector2(CENTER) - pos).normalize()
+            # north
+            if direction == 0:
+                dir = "north"
+                x = random.randrange(0, SCREEN_WIDTH)
+                y = 0
+
+            # east (오른쪽에서 왼쪽으로)
+            elif direction == 1:
+                dir = "east"
+                x = SCREEN_WIDTH
+                y = random.randrange(0, SCREEN_HEIGHT)
+
+            # west (왼쪽에서 오른쪽으로)
+            elif direction == 2:
+                dir = "west"
+                x = 0
+                y = random.randrange(0, SCREEN_HEIGHT)
+
+            # south
+            else:
+                dir = "south"
+                x = random.randrange(0, SCREEN_WIDTH)
+                y = SCREEN_HEIGHT
+
+            pos = pygame.Vector2(x, y)
             speed = random.randint(MONSTER_MIN_SPEED, MONSTER_MAX_SPEED)
             item_type = random.choice(self.item_types)
 
             item = {
                 "pos": pos,
-                "dir": direction,
+                "dir": dir,
                 "speed": speed,
                 "type": item_type,
                 "collected": False
@@ -40,7 +62,17 @@ class ItemManager:
             self.items.append(item)
 
         for item in self.items:
-            item["pos"] += item["dir"] * item["speed"] * dt
+            if item["dir"] == "north":
+                item["pos"].y += item["speed"] * dt
+
+            elif item["dir"] == "east":
+                item["pos"].x -= item["speed"] * dt
+
+            elif item["dir"] == "west":
+                item["pos"].x += item["speed"] * dt
+
+            else:
+                item["pos"].y -= item["speed"] * dt
 
     def draw(self, screen):
         for item in self.items:
@@ -57,23 +89,24 @@ class ItemManager:
         return False
 
     def _is_out(self, item):
-        return item["pos"].distance_to(CENTER) > RADIUS
+        return (
+                (item["dir"] == "north" and item["pos"].y > SCREEN_HEIGHT) or
+                (item["dir"] == "south" and item["pos"].y < 0) or
+                (item["dir"] == "east" and item["pos"].x < 0) or
+                (item["dir"] == "west" and item["pos"].x > SCREEN_WIDTH)
+        )
 
-    def use_item(self, key):
-        key_map = {
-            pygame.K_1: "button",
-            pygame.K_2: "sound",
-            pygame.K_3: "shock",
-            pygame.K_4: "light",
-        }
-
-        if key in key_map:
-            target_type = key_map[key]
-            for item in self.collected_items:
-                if item["type"] == target_type:
-                    print(f"아이템 {target_type} 사용")
-                    self.collected_items.remove(item)
-                    return target_type
+    def use_item(self, message):
+        # 가지고 있는 아이템 중에
+        for item in self.collected_items:
+            # "message" 아이템이 있으면
+            if item["type"] == message:
+                # 그 아이템을 사용한다.
+                print(f"아이템 {message} 사용")
+                # 가진 아이템 중에서 뺀다.
+                self.collected_items.remove(item)
+                # 사용할 아이템 반환
+                return message
 
     def draw_collection(self, screen):
         x = 20

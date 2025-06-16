@@ -1,6 +1,6 @@
 import pygame
 # import smbus
-from settings import PLAYER_SIZE, PLAYER_SPEED, CENTER, RADIUS
+from settings import PLAYER_SIZE, PLAYER_SPEED, CENTER, SCREEN_WIDTH, SCREEN_HEIGHT
 
 class Player:
     # 이니셜라이즈
@@ -48,54 +48,43 @@ class Player:
         # self.bus = smbus.SMBus(1)
 
     # 움직임 메서드
-    def move(self, keys, dt):
+    def move(self, dt, keys=None, joystick=None):
         if self.shield_timer > 0:
             self.shield_timer -= dt
         delta = pygame.Vector2(0, 0)
-        if keys[pygame.K_w]:
-            delta.y -= self.speed * dt
-            self.direction = "up"
-        if keys[pygame.K_s]:
-            delta.y += self.speed * dt
-            self.direction = "down"
-        if keys[pygame.K_a]:
-            delta.x -= self.speed * dt
-            self.direction = "left"
-        if keys[pygame.K_d]:
-            delta.x += self.speed * dt
-            self.direction = "right"
+
+        # 키 우선 입력
+        if keys:
+            if keys[pygame.K_w]:
+                delta.y -= self.speed * dt
+                self.direction = "up"
+            if keys[pygame.K_s]:
+                delta.y += self.speed * dt
+                self.direction = "down"
+            if keys[pygame.K_a]:
+                delta.x -= self.speed * dt
+                self.direction = "left"
+            if keys[pygame.K_d]:
+                delta.x += self.speed * dt
+                self.direction = "right"
+        # 키보드가 안 눌렸을 때만 조이스틱 사용
+        elif joystick:
+            x_axis, y_axis = joystick  # 예: (x값, y값) -1.0~1.0 범위
+            delta.x += x_axis * self.speed * dt
+            delta.y += y_axis * self.speed * dt
+
+            # 방향 저장 (간단히 절댓값 큰 축 기준)
+            if abs(x_axis) > abs(y_axis):
+                self.direction = "right" if x_axis > 0 else "left"
+            else:
+                self.direction = "down" if y_axis > 0 else "up"
 
         new_pos = self.pos + delta
-        if new_pos.distance_to(CENTER) <= RADIUS:
-            self.pos = new_pos
-        """
-        bus.write_byte(address, A0)
-        time.sleep(0.01)
-        value1 = bus.read_byte(address)
+        # 화면 밖으로 못나가게 clamp
+        new_x = max(0, min(SCREEN_WIDTH, new_pos.x))
+        new_y = max(0, min(SCREEN_HEIGHT, new_pos.y))
+        self.pos = pygame.Vector2(new_x, new_y)
 
-        bus.write_byte(address, A1)
-        time.sleep(0.01)
-        value2 = bus.read_byte(address)
-        
-        delta = pygame.Vector2(0, 0)
-
-        if value1 < 100 and player_pos.x > (0 - player_size / 2):
-            print("left")
-            delta.x -= self.speed * dt
-        if value1 > 220 and player_pos.x < (width - player_size / 2):
-            print("right")
-            delta.x += self.speed * dt
-        if value2 < 100 and player_pos.y > (0 - player_size / 2):
-            print("up")
-            delta.y -= self.speed * dt
-        if value2 > 220 and player_pos.y < (height - player_size / 2):
-            print("down")
-            delta.y += self.speed * dt
-        
-        new_pos = self.pos + delta
-        if new_pos.distance_to(CENTER) <= RADIUS:
-            self.pos = new_pos
-        """
         self.update_animation(dt)
 
     def update_animation(self, dt):

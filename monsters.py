@@ -1,12 +1,12 @@
 import pygame
 import random
 import math
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, MONSTER_MIN_SPEED, MONSTER_MAX_SPEED, LIMITED_MONSTERS, CENTER, RADIUS, MONSTER_SIZE
+import settings
 
 class MonsterManger:
     def __init__(self):
         self.monsters = []
-        self.size = MONSTER_SIZE
+        self.size = settings.MONSTER_SIZE
 
         self.images = []
         # 프레임 나누기
@@ -41,18 +41,40 @@ class MonsterManger:
 
         self.monsters = [monster for monster in self.monsters if not self._is_out(monster)]
 
-        while len(self.monsters) < LIMITED_MONSTERS:
-            angle = random.uniform(0, 2 * math.pi)
-            x = CENTER[0] + RADIUS * math.cos(angle)
-            y = CENTER[1] + RADIUS * math.sin(angle)
-            pos = pygame.Vector2(x, y)
+        while len(self.monsters) < settings.LIMITED_MONSTERS:
+            # start direction
+            direction = random.randint(0, 3)
 
-            direction = (pygame.Vector2(CENTER) - pos).normalize()
-            speed = random.randint(MONSTER_MIN_SPEED, MONSTER_MAX_SPEED)
+            # north
+            if direction == 0:
+                dir = "north"
+                x = random.randrange(0, settings.SCREEN_WIDTH)
+                y = 0
+
+            # east (오른쪽에서 왼쪽으로)
+            elif direction == 1:
+                dir = "east"
+                x = settings.SCREEN_WIDTH
+                y = random.randrange(0, settings.SCREEN_HEIGHT)
+
+            # west (왼쪽에서 오른쪽으로)
+            elif direction == 2:
+                dir = "west"
+                x = 0
+                y = random.randrange(0, settings.SCREEN_HEIGHT)
+
+            # south
+            else:
+                dir = "south"
+                x = random.randrange(0, settings.SCREEN_WIDTH)
+                y = settings.SCREEN_HEIGHT
+
+            pos = pygame.Vector2(x, y)
+            speed = random.randint(settings.MONSTER_MIN_SPEED, settings.MONSTER_MAX_SPEED)
 
             monsters = {
                 "pos": pos,
-                "dir": direction,
+                "dir": dir,
                 "speed": speed,
                 "frames": random.choice(self.images),
                 "frame_index": 0,
@@ -63,12 +85,24 @@ class MonsterManger:
 
         if not is_frozen:
             for monsters in self.monsters:
+                # 난이도 반영된 기본 속도 계산
+                actual_speed = monsters["speed"] * settings.SPEED_VALUE
+
+                # 아이템 효과 반영
                 if is_slown:
-                    speed_value = 0.3
-                    monsters["pos"] += monsters["dir"] * monsters["speed"] * dt * speed_value
-                else:
-                    speed_value = 1.0
-                    monsters["pos"] += monsters["dir"] * monsters["speed"] * dt * speed_value
+                    actual_speed *= 0.3
+
+                if monsters["dir"] == "north":
+                    monsters["pos"].y += actual_speed* dt
+
+                elif monsters["dir"] == "east":
+                    monsters["pos"].x -= actual_speed * dt
+
+                elif monsters["dir"] == "west":
+                    monsters["pos"].x += actual_speed * dt
+
+                else:  # south
+                    monsters["pos"].y -= actual_speed * dt
 
 
     def draw(self, screen):
@@ -80,7 +114,7 @@ class MonsterManger:
 
             image = monster["frames"][monster["frame_index"]]
 
-            if monster["dir"].x < 0:
+            if monster["dir"] == "east":
                 image = pygame.transform.flip(image, True, False)
 
             screen.blit(image, image.get_rect(center=monster["pos"]))
@@ -95,11 +129,16 @@ class MonsterManger:
         return False
 
     def _is_out(self, monster):
-        return monster["pos"].distance_to(CENTER) > RADIUS
+        return (
+                (monster["dir"] == "north" and monster["pos"].y > settings.SCREEN_HEIGHT) or
+                (monster["dir"] == "south" and monster["pos"].y < 0) or
+                (monster["dir"] == "east" and monster["pos"].x < 0) or
+                (monster["dir"] == "west" and monster["pos"].x > settings.SCREEN_WIDTH)
+        )
 
     def clear_all(self):
         self.monsters = []
-        self.respawn_delay = 1.0
+        self.respawn_delay = 2.0
 
     def freeze(self, seconds):
         self.freeze_timer = seconds
