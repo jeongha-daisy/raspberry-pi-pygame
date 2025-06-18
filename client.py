@@ -35,13 +35,7 @@ GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(LIGHT_PIN, GPIO.IN)
 GPIO.setup(SOUND_PIN, GPIO.IN)
 
-# 이전 상태 저장
-shock_previous = GPIO.input(SHOCK_PIN)
-button_previous = GPIO.input(BUTTON_PIN)
-light_previous = GPIO.input(LIGHT_PIN)
-sound_previous = GPIO.input(SOUND_PIN)
-
-# --- 안정적 입력 확인 함수 ---
+# 0.2초동안 들어온 값 없도록 하기
 def stable_input(pin, target_state, duration=0.2):
     start = time.time()
     while time.time() - start < duration:
@@ -52,40 +46,24 @@ def stable_input(pin, target_state, duration=0.2):
 
 # 이벤트 콜백
 def shock_detected(channel):
-    global shock_previous
     if stable_input(SHOCK_PIN, GPIO.LOW):
-        current = GPIO.input(SHOCK_PIN)
-        if current != shock_previous:
-            shock_previous = current
-            print("Shock detected")
-            event_queue.append("shock")
+        print("Shock detected")
+        event_queue.append("shock")
 
 def button_pressed(channel):
-    global button_previous
     if stable_input(BUTTON_PIN, GPIO.LOW):
-        current = GPIO.input(BUTTON_PIN)
-        if current != button_previous:
-            button_previous = current
-            print("Button pressed")
-            event_queue.append("button")
+        print("Button pressed")
+        event_queue.append("button")
 
 def light_detected(channel):
-    global light_previous
     if stable_input(LIGHT_PIN, GPIO.HIGH):
-        current = GPIO.input(LIGHT_PIN)
-        if current != light_previous:
-            light_previous = current
-            print("Light detected")
-            event_queue.append("light")
+        print("Light detected")
+        event_queue.append("light")
 
 def sound_detected(channel):
-    global sound_previous
     if stable_input(SOUND_PIN, GPIO.HIGH):
-        current = GPIO.input(SOUND_PIN)
-        if current != sound_previous:
-            sound_previous = current
-            print("sound detected")
-            event_queue.append("sound")
+        print("Sound detected")
+        event_queue.append("sound")
 
     
 # 이벤트 감지 등록
