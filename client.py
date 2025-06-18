@@ -9,10 +9,10 @@ SERVER_IP = '10.125.126.21'
 EVENT_PORT = 9000       # 이벤트용 포트
 JOYSTICK_PORT = 5000    # 조이스틱용 포트
 
-# 조이스틱 설정 (I2C)
+# 조이스틱 설정
 address = 0x48
-A0 = 0x40  # Up/Down
-A1 = 0x41  # Left/Right
+A0 = 0x40
+A1 = 0x41
 bus = smbus.SMBus(1)
 
 # GPIO 핀 설정
@@ -21,18 +21,12 @@ BUTTON_PIN = 18
 SOUND_PIN = 19
 LIGHT_PIN = 27
 
-# 소켓 연결
-event_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-joystick_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# 소켓 선언 (초기 None)
+event_client = None
+joystick_client = None
 
-try:
-    event_client.connect((SERVER_IP, EVENT_PORT))
-    print("✅ Connected to EVENT server.")
-    joystick_client.connect((SERVER_IP, JOYSTICK_PORT))
-    print("✅ Connected to JOYSTICK server.")
-except Exception as e:
-    print("❌ Connection failed:", e)
-    exit()
+# 이벤트 큐
+event_queue = []
 
 # GPIO 설정
 GPIO.setmode(GPIO.BCM)
@@ -45,55 +39,53 @@ GPIO.setup(SOUND_PIN, GPIO.IN)
 shock_previous = GPIO.input(SHOCK_PIN)
 button_previous = GPIO.input(BUTTON_PIN)
 light_previous = GPIO.input(LIGHT_PIN)
+sound_previous = GPIO.input(SOUND_PIN)
 
-# 이벤트 큐
-event_queue = []
-#queue_lock = threading.Lock() # 큐 보호를 위한 락
-# 메시지 전송 함수
-def send_event(message):
-    try:
-        event_client.sendall(message.encode('utf-8'))
-    except Exception as e:
-        print(f"⚠️ Error sending event: {e}")
+# --- 안정적 입력 확인 함수 ---
+def stable_input(pin, target_state, duration=0.2):
+    start = time.time()
+    while time.time() - start < duration:
+        if GPIO.input(pin) != target_state:
+            return False
+        time.sleep(0.01)
+    return True
 
-def send_joystick(message):
-    try:
-        joystick_client.sendall(message.encode('utf-8'))
-    except Exception as e:
-        print(f"⚠️ Error sending joystick: {e}")
-
-# 이벤트 콜백 함수들
+# 이벤트 콜백
 def shock_detected(channel):
     global shock_previous
-    print("🚨 Shock detected")
-    # with queue_lock: # 락을 획득하고 큐에 추가
-    event_queue.append("shock")
-    """
-    current_state = GPIO.input(SHOCK_PIN)
-    if current_state != shock_previous:
-        shock_previous = current_state
-	"""
+    if stable_input(SHOCK_PIN, GPIO.LOW):
+        current = GPIO.input(SHOCK_PIN)
+        if current != shock_previous:
+            shock_previous = current
+            print("Shock detected")
+            event_queue.append("shock")
 
 def button_pressed(channel):
     global button_previous
-    print("🔘 Button pressed")
-    # with queue_lock: # 락을 획득하고 큐에 추가
-    event_queue.append("button")
-    """
-    print("pressed")
-    current_state = GPIO.input(BUTTON_PIN)
-    if current_state != button_previous:
-        button_previous = current_state
-        """
+    if stable_input(BUTTON_PIN, GPIO.LOW):
+        current = GPIO.input(BUTTON_PIN)
+        if current != button_previous:
+            button_previous = current
+            print("Button pressed")
+            event_queue.append("button")
 
 def light_detected(channel):
     global light_previous
-    print("Dark detected")
-    event_queue.append("light")
+    if stable_input(LIGHT_PIN, GPIO.HIGH):
+        current = GPIO.input(LIGHT_PIN)
+        if current != light_previous:
+            light_previous = current
+            print("Light detected")
+            event_queue.append("light")
 
 def sound_detected(channel):
-    print("Sound detected")
-    event_queue.append("sound")
+    global sound_previous
+    if stable_input(SOUND_PIN, GPIO.HIGH):
+        current = GPIO.input(SOUND_PIN)
+        if current != sound_previous:
+            sound_previous = current
+            print("sound detected")
+            event_queue.append("sound")
 
     
 # 이벤트 감지 등록
@@ -102,26 +94,42 @@ GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=button_pressed, bouncet
 GPIO.add_event_detect(LIGHT_PIN, GPIO.RISING, callback=light_detected, bouncetime=200)
 GPIO.add_event_detect(SOUND_PIN, GPIO.RISING, callback=sound_detected, bouncetime=200)
 
+# 소켓 연결 함수
+def connect_socket(port):
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((SERVER_IP, port))
+            print(f"Connected to port {port}")
+            return s
+        except Exception as e:
+            print(f"Connection failed to port {port}: {e}")
+            time.sleep(3)
 
-# 이벤트 처리 스레드
+# 이벤트 전송 스레드
 def process_events():
+    global event_client
+    event_client = connect_socket(EVENT_PORT)
+
     while True:
         if event_queue:
             message = event_queue.pop(0)
-            send_event(message)
+            try:
+                event_client.sendall(message.encode('utf-8'))
+            except Exception as e:
+                print("Event send error:", e)
+                try:
+                    event_client.close()
+                except:
+                    pass
+                event_client = connect_socket(EVENT_PORT)
         time.sleep(0.05)
-"""def process_events():
-    while True:
-        message_to_send = None
-        with queue_lock: # 락을 획득하고 큐에서 꺼냄
-            if event_queue:
-                message_to_send = event_queue.pop(0)
-        if message_to_send:
-            send_event(message_to_send)
-        time.sleep(0.05) # 큐가 비어있어도 너무 바쁘게 돌지 않도록"""
 
 # 조이스틱 데이터 전송 스레드
 def joystick_loop():
+    global joystick_client
+    joystick_client = connect_socket(JOYSTICK_PORT)
+
     while True:
         try:
             bus.write_byte(address, A0)
@@ -133,27 +141,31 @@ def joystick_loop():
             value2 = bus.read_byte(address)
 
             message = f"{value1},{value2}"
-            send_joystick(message)
+            joystick_client.sendall(message.encode('utf-8'))
             print("🎮 Joystick:", message)
 
         except Exception as e:
-            print("⚠️ Joystick read error:", e)
-
+            print("Joystick error:", e)
+            try:
+                joystick_client.close()
+            except:
+                pass
+            joystick_client = connect_socket(JOYSTICK_PORT)
         time.sleep(0.1)
 
 # 스레드 시작
-event_thread = threading.Thread(target=process_events, daemon=True)
-joystick_thread = threading.Thread(target=joystick_loop, daemon=True)
-event_thread.start()
-joystick_thread.start()
+threading.Thread(target=process_events, daemon=True).start()
+threading.Thread(target=joystick_loop, daemon=True).start()
 
 # 메인 루프
 try:
     while True:
         time.sleep(1)
 except KeyboardInterrupt:
-    print("🛑 Exiting...")
+    print("Exiting...")
 finally:
     GPIO.cleanup()
-    event_client.close()
-    joystick_client.close()
+    if event_client:
+        event_client.close()
+    if joystick_client:
+        joystick_client.close()

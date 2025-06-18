@@ -1,4 +1,5 @@
 import pygame
+import time
 import socket
 import threading
 import settings
@@ -13,24 +14,27 @@ SERVER_IP = '10.125.126.21'
 PORT = 9000
 JOYSTICK_PORT = 5000
 
-# 기존 게임용 소켓
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((SERVER_IP, PORT))
-server_socket.listen(1)
-print(f"Server listening on {SERVER_IP}:{PORT}")
+# 서버 연결 한 번에 관리
+def create_server_socket(port):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((SERVER_IP, port))
+    server_socket.listen(1)
+    print(f"Server listening on {SERVER_IP}:{port}")
+    return server_socket
 
-# 조이스틱 소켓
-joystick_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-joystick_socket.bind((SERVER_IP, JOYSTICK_PORT))
-joystick_socket.listen(1)
-print(f"Joystick server listening on {SERVER_IP}:{JOYSTICK_PORT}")
+event_server_socket = create_server_socket(PORT)
+joystick_server_socket = create_server_socket(JOYSTICK_PORT)
+
+# 클라이언트 소켓 초기값
+event_client_socket = None
+joystick_client_socket = None
 
 #====================================================================== NETWORK
 
 pygame.init()
 pygame.mixer.init()
-shootSound = pygame.mixer.Sound('Itty_Bitty.mp3')
-shootSound.play(-1)
+backgroundMusic = pygame.mixer.Sound('Itty_Bitty.mp3')
+backgroundMusic.play(-1)
 global player, monsters, items, score, start_ticks, level
 
 screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
@@ -65,19 +69,38 @@ STATE_GAMEOVER = 5
 joystick_updown = 127
 joystick_leftright = 127
 
-# 센서 메시지 클라이언트 연결 수락
-client_socket, client_address = server_socket.accept()
-print(f"Connected to {client_address}")
-# 조이스틱 클라이언트 연결 수락
-joystick_client_socket, joystick_client_address = joystick_socket.accept()
-print(f"Joystick connected from {joystick_client_address}")
+
+def wait_for_event_client():
+    global event_client_socket
+    while running:
+        try:
+            print("waiting for client...")
+            event_client_socket, address = event_server_socket.accept()
+            print(f"EVENT client connected from {address}")
+            handle_client_message(event_client_socket)
+        except Exception as e:
+            print("EVENT connection error:", e)
+            time.sleep(1)
+
+# 조이스틱 서버 기다리기
+def wait_for_joystick_client():
+    global joystick_client_socket
+    while running:
+        try:
+            print("waiting for joystick client...")
+            joystick_client_socket, address = joystick_server_socket.accept()
+            print(f"JOYSTICK client connected from {address}")
+            handle_joystick_message(joystick_client_socket)
+        except Exception as e:
+            print("JOYSTICK connection error:", e)
+            time.sleep(1)
 
 
-def handle_client_message():
+def handle_client_message(socket):
     global running
     while running:
         try:
-            message = client_socket.recv(1024).decode('utf-8')
+            message = socket.recv(1024).decode('utf-8')
             if message:
                 print(f"Received: {message}")
                 handle_message(message)
@@ -85,8 +108,17 @@ def handle_client_message():
             print(f"Error receiving message: {e}")
             break
 
+
+last_used = {"shock": 0, "button": 0, "light": 0, "sound": 0}
+COOLDOWN = 3.0  # 아이템 사용 후 3초간 다른 아이템 사용 못함
+
 def handle_message(message):
     global game_state, items, player, start_ticks
+    now = time.time()
+    if now - last_used.get(message, 0) < COOLDOWN:
+        print("아이템 사용 가능 시간 안됨")
+        return
+    last_used[message] = now
 
     if game_state == STATE_TITLE:
         if message == "button":
@@ -125,11 +157,11 @@ def handle_message(message):
         pass
 
 
-def handle_joystick_message():
+def handle_joystick_message(socket):
     global running, joystick_updown, joystick_leftright
     while running:
         try:
-            message = joystick_client_socket.recv(1024).decode('utf-8').strip()
+            message = socket.recv(1024).decode('utf-8').strip()
             if message:
                 parts = message.split(',')
                 if len(parts) == 2:
@@ -313,10 +345,13 @@ while running:
     clock.tick(60)
 
 # 소켓 연결 종료
-client_socket.close()
-server_socket.close()
-joystick_client_socket.close()
-joystick_socket.close()
+if event_client_socket:
+    event_client_socket.close()
+if joystick_client_socket:
+    joystick_client_socket.close()
+event_server_socket.close()
+joystick_server_socket.close()
+
 
 pygame.mixer.quit()
 pygame.quit()
