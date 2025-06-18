@@ -22,8 +22,11 @@ class MonsterManger:
                 frames.append(frame)
             self.images.append(frames)
 
+        # 모든 몬스터를 없애는 아이템에 사용할 값
         self.respawn_delay = 0
+        # 모든 몬스터를 멈추하는 아이템에 사용할 값
         self.freeze_timer = 0
+        # 몬스터를 천천히 움직이는 아이템에 사용할 값
         self.slow_timer = 0
         self.frame_delay = 0.5
 
@@ -32,8 +35,10 @@ class MonsterManger:
             self.respawn_delay -= dt
             return
 
+        # 멈추거나 천천히 움직이는 중인지 확인
         is_frozen = self.freeze_timer > 0
         is_slown = self.slow_timer > 0
+
         if is_frozen:
             self.freeze_timer -= dt
         if is_slown:

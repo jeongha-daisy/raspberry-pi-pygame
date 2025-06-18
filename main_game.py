@@ -1,4 +1,5 @@
 import pygame
+import time
 import socket
 import threading
 import settings
@@ -9,7 +10,9 @@ from items import ItemManager
 
 #====================================================================== NETWORK
 
-SERVER_IP = '10.125.126.208'
+
+# GPIO 값은 이벤트가 생길 때만 보내주고, Joystick 값은 지속적으로 보내주어야하므로 다른 포트에서 값을 전달
+SERVER_IP = 'your ip address'
 PORT = 9000
 JOYSTICK_PORT = 5000
 
@@ -27,10 +30,11 @@ print(f"Joystick server listening on {SERVER_IP}:{JOYSTICK_PORT}")
 
 #====================================================================== NETWORK
 
+# 게임 기본 세팅들
 pygame.init()
 pygame.mixer.init()
-shootSound = pygame.mixer.Sound('Itty_Bitty.mp3')
-shootSound.play(-1)
+backgroundMusic = pygame.mixer.Sound('Itty_Bitty.mp3')
+backgroundMusic.play(-1)
 global player, monsters, items, score, start_ticks, level
 
 screen = pygame.display.set_mode((settings.SCREEN_WIDTH, settings.SCREEN_HEIGHT))
@@ -72,7 +76,7 @@ print(f"Connected to {client_address}")
 joystick_client_socket, joystick_client_address = joystick_socket.accept()
 print(f"Joystick connected from {joystick_client_address}")
 
-
+# gpio 값 핸들 함수
 def handle_client_message():
     global running
     while running:
@@ -85,9 +89,20 @@ def handle_client_message():
             print(f"Error receiving message: {e}")
             break
 
+
+last_used = {"shock": 0, "button": 0, "light": 0, "sound": 0}
+COOLDOWN = 1.5  # 아이템 사용 후 1.5초간 다른 아이템 사용 못함
+
+# 받은 값에 따라 아이템을 처리할 함수
 def handle_message(message):
     global game_state, items, player, start_ticks
+    now = time.time()
+    if now - last_used.get(message, 0) < COOLDOWN:
+        print("아이템 사용 가능 시간 안됨")
+        return
+    last_used[message] = now
 
+    # 게임 전
     if game_state == STATE_TITLE:
         if message == "button":
             game_state = STATE_TUTORIAL_1
@@ -102,7 +117,7 @@ def handle_message(message):
             start_ticks = pygame.time.get_ticks()
             game_state = STATE_PLAY
 
-    # 게임 중
+    # 게임 중 (아이템 처리)
     elif game_state == STATE_PLAY:
         used_item = items.use_item(message)
         if used_item == "button":
@@ -124,22 +139,27 @@ def handle_message(message):
     else:
         pass
 
-
+# joystick 값 핸들 함수
 def handle_joystick_message():
     global running, joystick_updown, joystick_leftright
     while running:
         try:
-            message = joystick_client_socket.recv(1024).decode('utf-8')
+            message = joystick_client_socket.recv(1024).decode('utf-8').strip()
             if message:
-                value1_str, value2_str = message.strip().split(',')
-                joystick_updown = int(value1_str)
-                joystick_leftright = int(value2_str)
-                print(f"Joystick data received: {joystick_updown}, {joystick_leftright}")
+                # value1,value2로 넘겨줌
+                parts = message.split(',')
+                if len(parts) == 2:
+                    value1_str, value2_str = parts
+                    joystick_updown = int(value1_str)
+                    joystick_leftright = int(value2_str)
+                else:
+                    print(f"Invalid joystick message format: {message}")
         except Exception as e:
             print(f"Error receiving joystick data: {e}")
             break
 
 # 메시지 수신을 위한 스레드 실행
+# 게임 중엔 while loop를 돌기 때문에 다중 스레드로 연결
 threading.Thread(target=handle_client_message, daemon=True).start()
 threading.Thread(target=handle_joystick_message, daemon=True).start()
 
@@ -158,7 +178,7 @@ def reset_game():
 
 # 간단한 줄바꿈 출력 함수
 def render_multiline(textFile, font, color, surface, center_y, line_height):
-    with open(textFile, "r") as file:
+    with open(textFile, "r", encoding="utf-8") as file:
         lines = file.read().splitlines()
 
     total_height = len(lines) * line_height
@@ -169,42 +189,14 @@ def render_multiline(textFile, font, color, surface, center_y, line_height):
         msg_rect = msg.get_rect(center=(settings.CENTER[0], start_y + i * line_height))
         surface.blit(msg, msg_rect)
 
+# 게임 시작
 while running:
     screen.blit(bg_image, (0, 0))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
-            used_item = items.use_item(event.key)
-            if used_item == "button":
-                monsters.freeze(2)
-            elif used_item == "sound":
-                monsters.slow_down(2.0)
-            elif used_item == "light":
-                player.activate_shield(3.0)
-            elif used_item == "shock" :
-                monsters.clear_all()
 
-            if event.key == pygame.K_k:
-                if game_state == STATE_TITLE:
-                    game_state = STATE_TUTORIAL_1
-                elif game_state == STATE_TUTORIAL_1:
-                    game_state = STATE_TUTORIAL_2
-                elif game_state == STATE_TUTORIAL_2:
-                    game_state = STATE_TUTORIAL_3
-                elif game_state == STATE_TUTORIAL_3:
-                    start_ticks = pygame.time.get_ticks()
-                    game_state = STATE_PLAY
-                elif game_state == STATE_PLAY:
-                    game_state = STATE_GAMEOVER
-                elif game_state == STATE_GAMEOVER:
-                    reset_game()
-                    game_state = STATE_PLAY
-                    pass
-
-
-    keys = pygame.key.get_pressed()
-
+    # 타이틀 화면
     if game_state == STATE_TITLE:
         title = titleFont.render("DODGE GAME", True, (255, 255, 255))
         line1 = textFont.render("PRESS BUTTON TO START", True, (255, 255, 255))
@@ -215,30 +207,33 @@ while running:
         screen.blit(title, title_rect)
         screen.blit(line1, line1_rect)
 
-
+    # 튜토리얼 1
     elif game_state == STATE_TUTORIAL_1:
         render_multiline("tutorial_text.txt", tutoFont, (255, 255, 255), screen, settings.CENTER[1], 60)
         line1 = textFont.render("PRESS BUTTON TO CONTINUE", True, (0, 0, 0))
         line1_rect = line1.get_rect(center=(settings.CENTER[0], settings.SCREEN_HEIGHT - 100))
         screen.blit(line1, line1_rect)
 
+    # 튜토리얼 2
     elif game_state == STATE_TUTORIAL_2:
         render_multiline("tutorial_text2.txt", tutoFont2, (255, 255, 255), screen, settings.CENTER[1], 60)
         line1 = textFont.render("PRESS BUTTON TO CONTINUE", True, (0, 0, 0))
         line1_rect = line1.get_rect(center=(settings.CENTER[0], settings.SCREEN_HEIGHT - 100))
         screen.blit(line1, line1_rect)
 
+    # 튜토리얼 3
     elif game_state == STATE_TUTORIAL_3:
         render_multiline("tutorial_text3.txt", tutoFont, (255, 255, 255), screen, settings.CENTER[1], 60)
         line1 = textFont.render("PRESS BUTTON TO START", True, (0, 0, 0))
         line1_rect = line1.get_rect(center=(settings.CENTER[0], settings.SCREEN_HEIGHT - 100))
         screen.blit(line1, line1_rect)
 
+    # 게임 중
     elif game_state == STATE_PLAY:
         score = int((pygame.time.get_ticks() - start_ticks) / 1000)
 
+        # 점수가 10의 배수가 될 때마다 속도를 올린다.
         if score // 10 > level:
-            print("속도 올리기", settings.SPEED_VALUE, settings.MONSTER_MIN_SPEED, settings.MONSTER_MAX_SPEED)
             settings.SPEED_VALUE += 0.1
             settings.SPEED_VALUE = round(settings.SPEED_VALUE, 1)
             level = score // 10
@@ -255,9 +250,7 @@ while running:
         items.draw_collection(screen)
 
         # 플레이어 그리기
-        # player.move(keys, clock.get_time() / 1000)
-        player.move(clock.get_time() / 1000, keys=keys, joystick_updown=joystick_updown,
-                    joystick_leftright=joystick_leftright)
+        player.move(clock.get_time() / 1000, joystick=[joystick_updown, joystick_leftright])
         player.draw(screen)
 
         # 충돌 검사 시 쉴드 반영
@@ -266,6 +259,7 @@ while running:
         if items.check_collision(player.get_collider()):
             print("아이템 먹음")
 
+        # 센서 인식 UI 그리기 (사용 중인 아이템으로 구분)
         if monsters.freeze_timer > 0:
             line1 = textFont.render("button detected!", True, (255, 255, 255))
             line1_rect = line1.get_rect(center=(settings.CENTER[0], settings.CENTER[1]))
@@ -293,6 +287,7 @@ while running:
 
         screen.blit(startText, text_rect)
 
+    # 게임오버
     elif game_state == STATE_GAMEOVER:
         line1 = textFont.render(f"GAME OVER SCORE: {score}", True, (255, 255, 255))
         line2 = textFont.render("PRESS BUTTON TO RESTART", True, (255, 255, 255))

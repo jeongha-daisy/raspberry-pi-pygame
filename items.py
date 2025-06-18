@@ -20,7 +20,7 @@ class ItemManager:
         self.items = [item for item in self.items if not self._is_out(item) and not item["collected"]]
 
         while len(self.items) < LIMITED_ITEMS:
-            # start direction
+            # start direction 북, 동, 남, 서로 구분
             direction = random.randint(0, 3)
 
             # north
@@ -61,6 +61,7 @@ class ItemManager:
 
             self.items.append(item)
 
+        # 시작 방향에 따라 움직일 위치 조정
         for item in self.items:
             if item["dir"] == "north":
                 item["pos"].y += item["speed"] * dt
@@ -73,11 +74,11 @@ class ItemManager:
 
             else:
                 item["pos"].y -= item["speed"] * dt
-
     def draw(self, screen):
         for item in self.items:
             screen.blit(self.images[item["type"]], item["pos"])
 
+    # 닿았는지 검사
     def check_collision(self, collider):
         left, right, top, bottom = collider
         for item in self.items:
@@ -88,6 +89,7 @@ class ItemManager:
                 return True
         return False
 
+    # 화면 밖인지 검사
     def _is_out(self, item):
         return (
                 (item["dir"] == "north" and item["pos"].y > SCREEN_HEIGHT) or
@@ -96,6 +98,7 @@ class ItemManager:
                 (item["dir"] == "west" and item["pos"].x > SCREEN_WIDTH)
         )
 
+    # 아이템 사용 확인 검사
     def use_item(self, message):
         # 가지고 있는 아이템 중에
         for item in self.collected_items:
@@ -108,6 +111,7 @@ class ItemManager:
                 # 사용할 아이템 반환
                 return message
 
+    # 좌측 하단에 먹은 아이템 그리기
     def draw_collection(self, screen):
         x = 20
         y = SCREEN_HEIGHT - 20
