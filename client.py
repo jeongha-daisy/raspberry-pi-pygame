@@ -5,7 +5,7 @@ import time
 import threading
 
 # 서버 설정
-SERVER_IP = '10.125.126.21'
+SERVER_IP = 'your ip address'
 EVENT_PORT = 9000       # 이벤트용 포트
 JOYSTICK_PORT = 5000    # 조이스틱용 포트
 
